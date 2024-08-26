@@ -5,6 +5,8 @@ import Token from '#models/token'
 import Statuses from '#enums/statuses'
 import { OAuth2Client } from 'google-auth-library'
 import type { HttpContext } from '@adonisjs/core/http'
+import CrowdsourceData from '#models/crowdsource_datum'
+import CrowdsourceTargets from '#models/crowdsource_target'
 import { createAuthValidator, googleAuthValidator, verifyEmailValidator } from '#validators/auth'
 
 export default class AuthController {
@@ -98,8 +100,9 @@ export default class AuthController {
     const status = { isAuthenticated: false, user: null }
 
     if (auth.isAuthenticated) {
-      const userData = await this.prepareUserData(auth.user!)
-      Object.assign(status, { user: userData, isAuthenticated: true })
+      const user = auth.user!
+      await User.loadRelations(user)
+      Object.assign(status, { user: user, isAuthenticated: true })
     }
     return response.json(status)
   }
@@ -142,12 +145,24 @@ export default class AuthController {
    */
   async destroy({}: HttpContext) {}
 
-  async prepareUserData(user: User) {
-    await user.load('role')
-    await user.load('status')
-    await User.checkCrowdsource(user)
-    return user
-  }
+  // async crowdsourceData({ auth, response }: HttpContext) {
+  //   try {
+  //     const data = await CrowdsourceData.findByOrFail('created_by', auth.user!.id)
+  //     await CrowdsourceData.loadRelations(data)
+  //     return response.json(data)
+  //   } catch (error) {
+  //     return response.notFound({
+  //       errors: [{ message: 'No associated career profile found.' }],
+  //     })
+  //   }
+  // }
+
+  // async prepareUserData(user: User) {
+  //   await user.load('role')
+  //   await user.load('status')
+  //   await User.checkCrowdsource(user)
+  //   return user
+  // }
 
   async signupPreRegUser(user: User, payload: any) {
     const searchPayload = { email: payload.email }
@@ -162,9 +177,10 @@ export default class AuthController {
   async authenticateUser(auth: any, user: User) {
     await auth.use('web').login(user)
     await auth.authenticate()
-    const userData = await this.prepareUserData(auth.user!)
+    await User.loadRelations(user)
+    // const userData = await this.prepareUserData(auth.user!)
     const headline = user.newlyCreated ? 'Welcome' : 'Welcome Back'
-    return { data: userData, message: `${headline} ${user.name}` }
+    return { data: user, message: `${headline} ${user.name}` }
   }
 
   async verifyCode(code: string) {

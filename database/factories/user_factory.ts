@@ -1,4 +1,5 @@
 import User from '#models/user'
+import City from '#models/city'
 import Benefit from '#models/benefit'
 import CrowdsourceDatum from '#models/crowdsource_datum'
 import factory from '@adonisjs/lucid/factories'
@@ -12,8 +13,14 @@ export const BenefitsFactory = factory
 
 export const CrowdsourceFactory = factory
   .define(CrowdsourceDatum, async ({ faker }) => {
+    const countryId = 25
+    // Math.floor(Math.random() * 54) + 1
+    const cities = await City.query().where('country_id', countryId).orderBy('id', 'desc')
+    let firstCityId = cities.pop()!.id
+    let lastCityId = cities[0].id
+
     return {
-      countryId: Math.floor(Math.random() * 54) + 1,
+      countryId: countryId,
       contractTermId: Math.floor(Math.random() * 6) + 1,
       employeeTypeId: Math.floor(Math.random() * 2) + 1,
       company: faker.company.name(),
@@ -28,7 +35,7 @@ export const CrowdsourceFactory = factory
       educationId: Math.floor(Math.random() * 11) + 1,
       payCurrencyId: Math.floor(Math.random() * 54) + 1,
       genderId: Math.floor(Math.random() * 3) + 1,
-      cityId: 100,
+      cityId: Math.random() * (lastCityId - firstCityId) + firstCityId,
     }
   })
   .relation('benefits', () => BenefitsFactory)

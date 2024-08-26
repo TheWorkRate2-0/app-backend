@@ -12,7 +12,7 @@ export const createAuthValidator = vine.compile(
       .string()
       .trim()
       .email()
-      .unique(async (db, value, field) => {
+      .unique(async (db, value) => {
         const user = await db.from('users').whereNotNull('password').where('email', value).first()
         return !user
       }),

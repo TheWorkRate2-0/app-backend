@@ -5,6 +5,6 @@ export default class extends BaseSeeder {
   async run() {
     await UserFactory.with('crowdsource', 1, (crowdsource) =>
       crowdsource.with('benefits', 5)
-    ).createMany(20)
+    ).createMany(50)
   }
 }

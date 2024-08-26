@@ -52,9 +52,16 @@ export default class extends BaseSchema {
         .inTable('experiences')
         .notNullable()
       table.integer('gender_id').unsigned().references('id').inTable('genders').nullable()
-      table.string('created_by').references('id').inTable('users').onDelete('SET NULL').nullable()
+      table
+        .string('created_by')
+        .references('id')
+        .inTable('users')
+        .onDelete('SET NULL')
+        .unique()
+        .nullable()
       table.timestamp('created_at')
       table.timestamp('updated_at')
+      table.bigint('can_next_update').nullable()
     })
 
     this.defer(async (db) => {

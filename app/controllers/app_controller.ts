@@ -13,19 +13,11 @@ import Benefit from '#models/benefit'
 import Gender from '#models/gender'
 import Sector from '#models/sector'
 import City from '#models/city'
-import { cityValidator, searchValidator, currencyValidator } from '#validators/app'
+import { cityValidator, currencyValidator } from '#validators/app'
 
 export default class AppController {
-  async countries({ request, response }: HttpContext) {
-    const payload = await request.validateUsing(searchValidator)
-    const countries =
-      payload.search.length > 0
-        ? await Country.query()
-            .whereILike('label', '%' + payload.search + '%')
-            .preload('currency')
-            .orderBy('id', 'asc')
-        : []
-
+  async countries({ response }: HttpContext) {
+    const countries = await Country.query().preload('currency').orderBy('id', 'asc')
     return response.json(countries)
   }
 
@@ -55,14 +47,8 @@ export default class AppController {
     return response.json(education)
   }
 
-  async jobFamilies({ request, response }: HttpContext) {
-    const payload = await request.validateUsing(searchValidator)
-    const families =
-      payload.search.length > 0
-        ? await JobFamily.query()
-            .whereILike('label', '%' + payload.search + '%')
-            .orderBy('id', 'asc')
-        : []
+  async jobFamilies({ response }: HttpContext) {
+    const families = await JobFamily.query().orderBy('id', 'asc')
     return response.json(families)
   }
 

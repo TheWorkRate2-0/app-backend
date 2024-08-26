@@ -1,23 +1,20 @@
 import CrowdsourceDatum from '#models/crowdsource_datum'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
-import { BaseModel, column, belongsTo, beforeCreate } from '@adonisjs/lucid/orm'
+import { BaseModel, column, belongsTo, beforeSave } from '@adonisjs/lucid/orm'
 
-export default class CrowdsourceOptional extends BaseModel {
+export default class CrowdsourceTargets extends BaseModel {
   @column({ isPrimary: true, serializeAs: null })
   declare id: number
 
   @column({ serializeAs: null })
-  declare genderId: number
-
-  @column({ serializeAs: null })
-  declare crowdsourceDatumId: number
+  declare crowdsourceDatumId: string
 
   @column()
   declare options: string | Array<object>
 
-  @beforeCreate()
-  static async stringifyOptions(optional: CrowdsourceOptional) {
-    optional.options = JSON.stringify(optional.options)
+  @beforeSave()
+  static async stringifyOptions(targets: CrowdsourceTargets) {
+    targets.options = JSON.stringify(targets.options)
   }
 
   @belongsTo(() => CrowdsourceDatum)

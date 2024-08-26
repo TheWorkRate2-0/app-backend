@@ -9,12 +9,6 @@ export const cityValidator = vine.compile(
   })
 )
 
-export const searchValidator = vine.compile(
-  vine.object({
-    search: vine.string(),
-  })
-)
-
 export const currencyValidator = vine.compile(
   vine.object({
     currency: vine.number().nullable().optional(),

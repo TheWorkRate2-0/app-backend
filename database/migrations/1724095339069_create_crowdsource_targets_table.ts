@@ -1,7 +1,7 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 
 export default class extends BaseSchema {
-  protected tableName = 'crowdsource_optionals'
+  protected tableName = 'crowdsource_targets'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {

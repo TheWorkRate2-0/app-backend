@@ -16,10 +16,17 @@ import db from '@adonisjs/lucid/services/db'
 import CompanyType from '#models/company_type'
 import ContractTerm from '#models/contract_term'
 import EmployeeType from '#models/employee_type'
-import CrowdsourceOptional from '#models/crowdsource_optional'
+import CrowdsourceTargets from '#models/crowdsource_target'
 
 import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
-import { BaseModel, column, beforeCreate, belongsTo, manyToMany } from '@adonisjs/lucid/orm'
+import {
+  BaseModel,
+  column,
+  beforeCreate,
+  beforeSave,
+  belongsTo,
+  manyToMany,
+} from '@adonisjs/lucid/orm'
 
 export default class CrowdsourceDatum extends BaseModel {
   @column({ isPrimary: true })
@@ -80,7 +87,7 @@ export default class CrowdsourceDatum extends BaseModel {
   declare totalCompensation: number
 
   @column()
-  declare optionals: Array<any>
+  declare targets: Array<any>
 
   @column.dateTime({
     autoCreate: true,
@@ -99,12 +106,21 @@ export default class CrowdsourceDatum extends BaseModel {
   @column.dateTime({ serializeAs: null, autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
+  @column()
+  declare canNextUpdate: number
+
   @beforeCreate()
   static async generateId(data: CrowdsourceDatum) {
     data.id = uuidv4()
   }
 
-  @belongsTo(() => AgeGroup, { localKey: 'id', foreignKey: 'payCurrencyId' })
+  @beforeSave()
+  static async setCanNextUpdateDate(data: CrowdsourceDatum) {
+    const unixTimestamp = new Date().setMonth(new Date().getMonth() + 1)
+    data.canNextUpdate = unixTimestamp
+  }
+
+  @belongsTo(() => AgeGroup, { localKey: 'id', foreignKey: 'ageId' })
   declare age: BelongsTo<typeof AgeGroup>
 
   @belongsTo(() => City)
@@ -116,7 +132,7 @@ export default class CrowdsourceDatum extends BaseModel {
   @belongsTo(() => Country)
   declare country: BelongsTo<typeof Country>
 
-  @belongsTo(() => Currency, { localKey: 'id', foreignKey: 'ageId' })
+  @belongsTo(() => Currency, { localKey: 'id', foreignKey: 'payCurrencyId' })
   declare payCurrency: BelongsTo<typeof Currency>
 
   @belongsTo(() => Education)
@@ -169,7 +185,7 @@ export default class CrowdsourceDatum extends BaseModel {
     await models.load('employeeType')
     await models.load('benefits', (query) => query.pivotColumns(['amount']))
     await models.load('country', (query) => query.preload('currency'))
-    await this.loadOptionals(models)
+    await this.loadTargets(models)
 
     let totalCompensation = models.salary
     models.benefits.forEach((benefit) => {
@@ -182,12 +198,12 @@ export default class CrowdsourceDatum extends BaseModel {
     models.totalCompensation = totalCompensation
   }
 
-  static async loadOptionals(model: CrowdsourceDatum) {
+  static async loadTargets(model: CrowdsourceDatum) {
     let optionCurrency: string
-    const optional = await CrowdsourceOptional.findBy('crowdsource_datum_id', model.id)
-    if (optional) {
+    const targets = await CrowdsourceTargets.findBy('crowdsource_datum_id', model.id)
+    if (targets) {
       const options = await Promise.all(
-        (optional.options as object[]).map(async (option: any) => {
+        (targets.options as object[]).map(async (option: any) => {
           if (option.hasOwnProperty('rlshp')) {
             const query = db.from(option.rlshp).where('id', option.value)
             if (option.rlshp === 'currencies') query.select('id', 'label', 'abbr')
@@ -207,8 +223,21 @@ export default class CrowdsourceDatum extends BaseModel {
           ? Object.assign(option, { value: `${optionCurrency} ${option.value}` })
           : option
       )
-      Object.assign(model, { optionals: options })
+      Object.assign(model, { targets: options })
     }
+  }
+
+  static setDenomination(number: number) {
+    const chars = `${number}`.length
+    if (chars > 3 && chars < 7) return this.checkModulus(number, 1000)
+    if (chars >= 7) return this.checkModulus(number, 1000000)
+    return number
+  }
+
+  static checkModulus(number: number, weight: number) {
+    return number % weight === 0
+      ? `${number / weight}K`
+      : `${Math.round(number / weight).toFixed(2)}K`
   }
 
   // static async extendedMeta() {

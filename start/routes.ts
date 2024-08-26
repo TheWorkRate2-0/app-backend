@@ -41,8 +41,9 @@ router.group(() => {
 router.group(() => {
   router
     .group(() => {
-      router.get('/crowdsource/count', [CrowdsourceController, 'totalRecords'])
-      router.post('/crowdsource/optional', [CrowdsourceController, 'storeOptional'])
+      router.get('/crowdsource/totals', [CrowdsourceController, 'totals'])
+      router.post('/crowdsource/targets', [CrowdsourceController, 'storeTargets'])
+      router.get('/crowdsource/targets', [CrowdsourceController, 'showTargets'])
     })
     .use(middleware.auth())
 
@@ -65,6 +66,7 @@ router.group(() => {
     router.post('auth/connect', [AuthController, 'connect'])
     router.post('auth/verify-google', [AuthController, 'googleAuth'])
     router.post('auth/verify-email', [AuthController, 'verifyEmail'])
+    // router.get('auth/profile', [AuthController, 'crowdsourceData']).use(middleware.auth())
   })
 })
 

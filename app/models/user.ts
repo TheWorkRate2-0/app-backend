@@ -11,8 +11,8 @@ import {
   hasMany,
   hasOne,
   belongsTo,
-  beforeCreate,
   afterCreate,
+  beforeCreate,
 } from '@adonisjs/lucid/orm'
 import type { HasMany, HasOne, BelongsTo } from '@adonisjs/lucid/types/relations'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -23,7 +23,7 @@ import Token from '#models/token'
 import Status from '#models/status'
 import Statuses from '#enums/statuses'
 import CrowdsourceDatum from '#models/crowdsource_datum'
-import CrowdsourceOptional from '#models/crowdsource_optional'
+import CrowdsourceTargets from '#models/crowdsource_target'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -106,7 +106,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare allowed_states: Status[]
 
   @column()
-  declare hasSurvey: boolean
+  declare hasProfile: boolean
 
   @column()
   declare hasTargets: boolean
@@ -119,7 +119,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @afterCreate()
   static async setCredits(user: User) {
     const refreshed = await user.refresh()
-    if (refreshed.roleId === Roles.user) await user.merge({ credits: 20 }).save()
+    if (refreshed.roleId === Roles.user) await user.merge({ credits: 0 }).save()
   }
 
   @afterCreate()
@@ -202,18 +202,41 @@ export default class User extends compose(BaseModel, AuthFinder) {
     Object.assign(models, { allowed_states: statuses })
   }
 
-  static async checkCrowdsource(models: User | User[]) {
-    if (Array.isArray(models)) {
-      await Promise.all(models.map((model) => this.checkCrowdsource(model)))
-      return
-    }
-    const crowdsource = await CrowdsourceDatum.findBy('created_by', models.id)
-    Object.assign(models, { hasSurvey: crowdsource ? true : false })
+  static async checkCrowdsource(model: User) {
+    const crowdsource = await CrowdsourceDatum.findBy('created_by', model.id)
+    Object.assign(model, { hasProfile: crowdsource ? true : false })
 
     if (crowdsource) {
-      const optional = await CrowdsourceOptional.findBy('crowdsource_datum_id', crowdsource.id)
-      Object.assign(models, { hasTargets: optional ? true : false })
-    } else Object.assign(models, { hasTargets: false })
+      await model.load('crowdsource', (query) =>
+        query.preload('country', (cQuery: any) => cQuery.preload('currency'))
+      )
+
+      const targets = await CrowdsourceTargets.findBy('crowdsource_datum_id', crowdsource.id)
+      Object.assign(model, { hasTargets: targets ? true : false })
+    } else Object.assign(model, { hasTargets: false })
+  }
+
+  static async loadRelations(models: User | User[]) {
+    if (Array.isArray(models)) {
+      await Promise.all(models.map((model) => this.loadRelations(model)))
+      return
+    }
+
+    await models.load('role')
+    await models.load('status')
+    await User.checkCrowdsource(models)
+  }
+
+  static async updateCredits(user: User, credit?: number | null, deduct: boolean = true) {
+    if (credit) {
+      if (!deduct) await user.merge({ credits: user.credits + credit }).save()
+      else {
+        if (user.credits > 0) await user.merge({ credits: user.credits - credit }).save()
+      }
+    }
+
+    await user.refresh()
+    return { credits: user.credits }
   }
 
   async sendGoogleRegEmail() {
