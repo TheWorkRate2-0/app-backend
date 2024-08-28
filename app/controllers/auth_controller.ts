@@ -51,6 +51,7 @@ export default class AuthController {
         errors: [{ message: 'Token verification failed.' }],
       })
     })
+    console.log('userInfo', userInfo)
 
     const user = await User.findBy('email', userInfo.email)
     if (user) {

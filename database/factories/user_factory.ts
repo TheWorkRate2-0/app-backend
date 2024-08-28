@@ -28,7 +28,7 @@ export const CrowdsourceFactory = factory
       ageId: Math.floor(Math.random() * 10) + 1,
       sectorId: Math.floor(Math.random() * 47) + 1,
       companyTypeId: Math.floor(Math.random() * 4) + 1,
-      salary: Number(faker.finance.amount()),
+      salary: Number(faker.finance.amount({ min: 15000, max: 500000, dec: 0 })),
       experienceId: Math.floor(Math.random() * 10) + 1,
       staffCountId: Math.floor(Math.random() * 9) + 1,
       jobFamilyId: Math.floor(Math.random() * 190) + 1,
