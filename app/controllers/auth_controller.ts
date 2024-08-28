@@ -52,34 +52,35 @@ export default class AuthController {
       })
     })
 
-    const user = await User.findBy('email', userInfo.email)
-    if (user) {
-      const hasPassword = await user.hasPassword()
-      if (hasPassword) {
-        if (user.authType !== 'google')
-          return response.badRequest({
-            errors: [
-              {
-                message:
-                  'Your account is not linked to gmail. Please sign in with your email and password.',
-              },
-            ],
-          })
-        else {
-          const loggedInResponse = await this.authenticateUser(auth, user)
-          return response.json(loggedInResponse)
-        }
-      } else return response.json({ data: userInfo, message: 'Google verification passed' })
-    } else {
-      const newUser = await User.create({ ...userInfo, auth_type: 'google' })
-      try {
-        await newUser.save()
-        return response.json({ data: userInfo, message: 'Google verification passed' })
-      } catch (errors) {
-        console.log(errors)
-        return response.badRequest({ errors: errors })
-      }
-    }
+    console.log('stop here')
+    // const user = await User.findBy('email', userInfo.email)
+    // if (user) {
+    //   const hasPassword = await user.hasPassword()
+    //   if (hasPassword) {
+    //     if (user.authType !== 'google')
+    //       return response.badRequest({
+    //         errors: [
+    //           {
+    //             message:
+    //               'Your account is not linked to gmail. Please sign in with your email and password.',
+    //           },
+    //         ],
+    //       })
+    //     else {
+    //       const loggedInResponse = await this.authenticateUser(auth, user)
+    //       return response.json(loggedInResponse)
+    //     }
+    //   } else return response.json({ data: userInfo, message: 'Google verification passed' })
+    // } else {
+    //   const newUser = await User.create({ ...userInfo, auth_type: 'google' })
+    //   try {
+    //     await newUser.save()
+    //     return response.json({ data: userInfo, message: 'Google verification passed' })
+    //   } catch (errors) {
+    //     console.log(errors)
+    //     return response.badRequest({ errors: errors })
+    //   }
+    // }
   }
 
   async login({ auth, request, response }: HttpContext) {
@@ -219,12 +220,12 @@ export default class AuthController {
     if (ticket) {
       const payload = ticket.getPayload()
       console.log('payload', payload)
-      return {
-        name: payload!['name'],
-        email: payload!['email'],
-        public_pic: payload!['picture'],
-        email_verified: payload!['email_verified'],
-      }
+      // return {
+      //   name: payload!['name'],
+      //   email: payload!['email'],
+      //   public_pic: payload!['picture'],
+      //   email_verified: payload!['email_verified'],
+      // }
     } else return ticket
   }
 }
