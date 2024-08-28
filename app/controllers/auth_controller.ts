@@ -51,7 +51,6 @@ export default class AuthController {
         errors: [{ message: 'Token verification failed.' }],
       })
     })
-    console.log('userInfo', userInfo)
 
     const user = await User.findBy('email', userInfo.email)
     if (user) {
@@ -193,8 +192,15 @@ export default class AuthController {
     const REDIRECT_URL = env.get('GOOGLE_REDIRECT_URL')
     const CLIENT_SECRET = env.get('GOOGLE_CLIENT_SECRET')
 
+    console.log('client id', CLIENT_ID)
+    console.log('redirect url', REDIRECT_URL)
+    console.log('client secret', CLIENT_SECRET)
+
     const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL)
     const result = await client.getToken(code)
+
+    console.log('client', client)
+    console.log('result', result)
 
     if (result.tokens) {
       const user = await this.verifyToken(result.tokens.id_token!)
@@ -209,8 +215,10 @@ export default class AuthController {
       idToken: token,
       audience: CLIENT_ID,
     })
+    console.log('ticket', ticket)
     if (ticket) {
       const payload = ticket.getPayload()
+      console.log('payload', payload)
       return {
         name: payload!['name'],
         email: payload!['email'],
