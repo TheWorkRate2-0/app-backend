@@ -198,9 +198,8 @@ export default class AuthController {
     console.log('client secret', CLIENT_SECRET)
 
     const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL)
-    const result = await client.getToken(code)
-
     console.log('client', client)
+    const result = await client.getToken(code)
     console.log('result', result)
 
     if (result.tokens) {
