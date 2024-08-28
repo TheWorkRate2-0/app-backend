@@ -47,6 +47,7 @@ export default class AuthController {
   async googleAuth({ auth, request, response }: HttpContext) {
     const payload = await request.validateUsing(googleAuthValidator)
     const userInfo: any = await this.verifyCode(payload.code).catch((errors) => {
+      console.log('errors', errors)
       return response.badRequest({
         errors: [{ message: 'Token verification failed.' }],
       })
