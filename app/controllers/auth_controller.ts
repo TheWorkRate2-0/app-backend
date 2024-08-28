@@ -85,6 +85,11 @@ export default class AuthController {
   async login({ auth, request, response }: HttpContext) {
     const { email, password } = request.only(['email', 'password'])
     const user = await User.verifyCredentials(email, password)
+    if (user.statusId !== Statuses.active) {
+      return response.badRequest({
+        errors: [{ message: 'Invalid user credentials' }],
+      })
+    }
     const loggedInResponse = await this.authenticateUser(auth, user)
 
     return response.json(loggedInResponse)
@@ -178,7 +183,6 @@ export default class AuthController {
     await auth.use('web').login(user)
     await auth.authenticate()
     await User.loadRelations(user)
-    // const userData = await this.prepareUserData(auth.user!)
     const headline = user.newlyCreated ? 'Welcome' : 'Welcome Back'
     return { data: user, message: `${headline} ${user.name}` }
   }
