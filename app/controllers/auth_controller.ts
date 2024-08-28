@@ -188,6 +188,7 @@ export default class AuthController {
   }
 
   async verifyCode(code: string) {
+    console.log('code', code)
     const CLIENT_ID = env.get('GOOGLE_CLIENT_ID')
     const REDIRECT_URL = env.get('GOOGLE_REDIRECT_URL')
     const CLIENT_SECRET = env.get('GOOGLE_CLIENT_SECRET')
