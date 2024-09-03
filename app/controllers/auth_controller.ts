@@ -52,6 +52,8 @@ export default class AuthController {
     const REDIRECT_URL = env.get('GOOGLE_REDIRECT_URL')
     const CLIENT_SECRET = env.get('GOOGLE_CLIENT_SECRET')
 
+    console.log('Redirect URI', REDIRECT_URL)
+
     const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL)
     const result = await client.getToken(payload.code)
 
