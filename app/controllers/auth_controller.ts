@@ -47,41 +47,56 @@ export default class AuthController {
   async googleAuth({ auth, request, response }: HttpContext) {
     const payload = await request.validateUsing(googleAuthValidator)
     console.log('code', payload.code)
-    const userInfo: any = await this.verifyCode(payload.code).catch((errors) => {
-      console.log('errors', errors)
-      return response.badRequest({
-        errors: [{ message: 'Token verification failed.' }],
-      })
-    })
 
-    const user = await User.findBy('email', userInfo.email)
-    if (user) {
-      const hasPassword = await user.hasPassword()
-      if (hasPassword) {
-        if (user.authType !== 'google')
-          return response.badRequest({
-            errors: [
-              {
-                message:
-                  'Your account is not linked to gmail. Please sign in with your email and password.',
-              },
-            ],
-          })
-        else {
-          const loggedInResponse = await this.authenticateUser(auth, user)
-          return response.json(loggedInResponse)
-        }
-      } else return response.json({ data: userInfo, message: 'Google verification passed' })
-    } else {
-      const newUser = await User.create({ ...userInfo, auth_type: 'google' })
-      try {
-        await newUser.save()
-        return response.json({ data: userInfo, message: 'Google verification passed' })
-      } catch (errors) {
-        console.log(errors)
-        return response.badRequest({ errors: errors })
-      }
-    }
+    const CLIENT_ID = env.get('GOOGLE_CLIENT_ID')
+    const REDIRECT_URL = env.get('GOOGLE_REDIRECT_URL')
+    const CLIENT_SECRET = env.get('GOOGLE_CLIENT_SECRET')
+
+    const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL)
+    const result = await client.getToken(payload.code)
+
+    console.log(result)
+
+    if (result.tokens) {
+      const user = await this.verifyToken(result.tokens.id_token!)
+      return user
+    } else return result
+
+    // const userInfo: any = await this.verifyCode(payload.code).catch((errors) => {
+    //   console.log('errors', errors)
+    //   return response.badRequest({
+    //     errors: [{ message: 'Token verification failed.' }],
+    //   })
+    // })
+
+    // const user = await User.findBy('email', userInfo.email)
+    // if (user) {
+    //   const hasPassword = await user.hasPassword()
+    //   if (hasPassword) {
+    //     if (user.authType !== 'google')
+    //       return response.badRequest({
+    //         errors: [
+    //           {
+    //             message:
+    //               'Your account is not linked to gmail. Please sign in with your email and password.',
+    //           },
+    //         ],
+    //       })
+    //     else {
+    //       const loggedInResponse = await this.authenticateUser(auth, user)
+    //       return response.json(loggedInResponse)
+    //     }
+    //   } else return response.json({ data: userInfo, message: 'Google verification passed' })
+    // } else {
+    //   const newUser = await User.create({ ...userInfo, auth_type: 'google' })
+    //   try {
+    //     await newUser.save()
+    //     return response.json({ data: userInfo, message: 'Google verification passed' })
+    //   } catch (errors) {
+    //     console.log(errors)
+    //     return response.badRequest({ errors: errors })
+    //   }
+    // }
   }
 
   async login({ auth, request, response }: HttpContext) {
