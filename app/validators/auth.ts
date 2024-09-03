@@ -1,5 +1,4 @@
 import vine from '@vinejs/vine'
-import { uniqueRule } from '#rules/unique'
 
 /**
  * Validates the user's creation action
@@ -11,7 +10,7 @@ export const createAuthValidator = vine.compile(
     email: vine
       .string()
       .trim()
-      .email()
+      .email({ host_whitelist: ['outlook.com', 'gmail.com', 'yahoo.com'] })
       .unique(async (db, value) => {
         const user = await db.from('users').whereNotNull('password').where('email', value).first()
         return !user

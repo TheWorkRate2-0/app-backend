@@ -240,28 +240,10 @@ export default class CrowdsourcesController {
         jobFamily: myData.jobFamily.label,
       }
 
-      const sexes = await CrowdsourceData.query()
-        .where('country_id', myData.countryId)
-        .select(
-          db.raw(`
-          SUM(CASE WHEN gender_id = 1 THEN 1 ELSE 0 END) as male,
-          SUM(CASE WHEN gender_id = 2 THEN 1 ELSE 0 END) as female,
-          SUM(CASE WHEN gender_id = 3 THEN 1 ELSE 0 END) as nonBinary,
-          COUNT(*) as total_count
-        `)
-        )
-      const { male, female, nonBinary } = sexes[0].$extras
-      const sexPercentages = {
-        male: `${Math.round((male / totalRecords) * 99)}%`,
-        female: `${Math.round((female / totalRecords) * 99)}%`,
-        nonBinary: `${Math.round((nonBinary / totalRecords) * 99)}%`,
-      }
-
       datasets = {
         records: totalRecords,
         cities: cities.length,
         avgSalary: avgObj,
-        gender: sexPercentages,
       }
     } else {
       const records = await CrowdsourceData.query().count('* as total')
@@ -271,8 +253,114 @@ export default class CrowdsourcesController {
     return response.json(datasets)
   }
 
-  async update({ params, request }: HttpContext) {}
+  async sexes({ auth, response }: HttpContext) {
+    const myData = await CrowdsourceData.findBy('created_by', auth.user!.id)
 
+    if (myData) {
+      const sexes = await CrowdsourceData.query()
+        .where('country_id', myData.countryId)
+        .select(
+          db.raw(`
+          SUM(CASE WHEN gender_id = 1 THEN 1 ELSE 0 END) as male,
+          SUM(CASE WHEN gender_id = 2 THEN 1 ELSE 0 END) as female,
+          SUM(CASE WHEN gender_id = 3 THEN 1 ELSE 0 END) as nonBinary,
+          COUNT(*) as total
+        `)
+        )
+      const { male, female, nonBinary } = sexes[0].$extras
+      const genderStats = [
+        {
+          label: 'Male',
+          count: male,
+        },
+        {
+          label: 'Female',
+          count: female,
+        },
+        {
+          label: 'Non Binary',
+          count: nonBinary,
+        },
+      ]
+      return response.json(genderStats)
+    }
+
+    return response.notFound({
+      errors: [{ message: 'Something wrong happened.' }],
+    })
+  }
+
+  async industryDist({ auth, response }: HttpContext) {
+    const myData = await CrowdsourceData.findBy('created_by', auth.user!.id)
+
+    if (myData) {
+      const datasets: any = {
+        labels: [],
+        numbers: [],
+      }
+      const data = await CrowdsourceData.query()
+        .where('country_id', myData.countryId)
+        .preload('companyType')
+        .groupBy('company_type_id')
+        .select('company_type_id')
+        .count('* as total')
+
+      data.forEach(async (datum: any) => {
+        let label
+        if (datum.companyType.label === 'For Profit (Revenue Generating)') label = 'For Profit'
+        else label = datum.companyType.label
+        datasets.labels.push(label)
+        datasets.numbers.push(datum.$extras.total)
+      })
+
+      const maxNumber = Math.max(...datasets.numbers)
+      const step = Math.round(maxNumber / datasets.numbers.length)
+      Object.assign(datasets, { max: maxNumber + step, step: step })
+      return response.json(datasets)
+    }
+
+    return response.notFound({
+      errors: [{ message: 'Something wrong happened.' }],
+    })
+  }
+
+  async sectorPayDist({ auth, response }: HttpContext) {
+    const myData = await CrowdsourceData.findBy('created_by', auth.user!.id)
+
+    if (myData) {
+      const datasets: any = []
+      const data = await CrowdsourceData.query()
+        .where('country_id', myData.countryId)
+        .preload('sector')
+        .groupBy('sector_id')
+        .select(
+          db.raw(`
+            sector_id,
+            SUM(salary) as totalSalary,
+            AVG(salary) as avgSalary,
+            COUNT(*) as count
+        `)
+        )
+
+      data.forEach(async (datum: any) => {
+        let dataset = {
+          avg: Math.round(datum.$extras.avgSalary),
+          percent: `${Math.round((datum.$extras.avgSalary / datum.$extras.totalSalary) * 100)}%`,
+          count: datum.$extras.count,
+          label: datum.sector.label,
+        }
+        datasets.push(dataset)
+      })
+
+      return response.json(datasets)
+    }
+
+    return response.notFound({
+      errors: [{ message: 'Something wrong happened.' }],
+    })
+  }
+
+  async update({ params }: HttpContext) {}
   async destroy({ params }: HttpContext) {}
 
   hasKeysFromArray(obj: object, keys: Array<string>) {

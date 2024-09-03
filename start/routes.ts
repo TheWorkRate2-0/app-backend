@@ -41,9 +41,12 @@ router.group(() => {
 router.group(() => {
   router
     .group(() => {
+      router.get('/crowdsource/sexes', [CrowdsourceController, 'sexes'])
       router.get('/crowdsource/totals', [CrowdsourceController, 'totals'])
-      router.post('/crowdsource/targets', [CrowdsourceController, 'storeTargets'])
       router.get('/crowdsource/targets', [CrowdsourceController, 'showTargets'])
+      router.post('/crowdsource/targets', [CrowdsourceController, 'storeTargets'])
+      router.get('/crowdsource/sector-pay-dist', [CrowdsourceController, 'sectorPayDist'])
+      router.get('/crowdsource/industry-dist', [CrowdsourceController, 'industryDist'])
     })
     .use(middleware.auth())
 
