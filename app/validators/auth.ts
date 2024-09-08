@@ -5,7 +5,7 @@ import vine from '@vinejs/vine'
  */
 export const createAuthValidator = vine.compile(
   vine.object({
-    name: vine.string().minLength(6),
+    name: vine.string().minLength(1),
     public_pic: vine.string().nullable().optional(),
     email: vine
       .string()
